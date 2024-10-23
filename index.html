@@ -8,171 +8,124 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
             padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         h1 {
+            text-align: center;
             color: #333;
         }
         label {
             display: block;
             margin-top: 10px;
         }
-        input[type="text"] {
-            padding: 8px;
+        input[type="text"], input[type="number"] {
             width: 100%;
+            padding: 10px;
             margin-top: 5px;
-        }
-        input[type="password"] {
-            padding: 8px;
-            width: 100%;
-            margin-top: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
         button {
-            margin-top: 15px;
+            width: 100%;
             padding: 10px;
-            background-color: #4CAF50;
+            background-color: #28a745;
             color: white;
             border: none;
+            border-radius: 5px;
             cursor: pointer;
         }
         button:hover {
-            background-color: #45a049;
+            background-color: #218838;
         }
-        .confirmados {
-            margin-top: 20px;
-            display: none;
-        }
-        .confirmado {
-            background-color: #e7f3e7;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-        }
-        #limpiarBtn {
-            display: none;
-        }
-        /* Estilo de error */
         .error {
             color: red;
-            margin-top: 5px;
-            display: none;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <h1>Confirmación de Asistencia de cumpleaños de Aura Leiva</h1>
-    <form id="invitadosForm">
-        <label for="nombre">Nombre del invitado:</label>
-        <input type="text" id="nombre" name="nombre" placeholder="Escribe tu nombre">
-        <p class="error" id="nombreError">Por favor, completa este campo.</p>
+    <div class="container">
+        <h1>Confirmar Asistencia Cumpleaños Mina </h1>
+        <form id="confirm-form">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" placeholder="Ingresa tu nombre" required>
 
-        <div id="extraInvitados"></div>
+            <label for="invitados">Número de Invitados</label>
+            <input type="number" id="invitados" placeholder="Número de invitados adicionales" required>
 
-        <button type="button" onclick="agregarInvitado()">Agregar 1 invitado más</button>
-        <button type="submit">Confirmar Asistencia</button>
-        <button type="button" onclick="resetearFormulario()">Resetear formulario</button>
-    </form>
+            <div class="error" id="error-message"></div>
 
-    <div class="confirmados" id="confirmadosSection">
-        <h2>Lista de personas que han confirmado asistencia:</h2>
-        <div id="listaConfirmados"></div>
-        <button type="button" id="limpiarBtn" onclick="limpiarConfirmaciones()">Limpiar confirmaciones</button>
+            <button type="submit">Confirmar Asistencia</button>
+        </form>
     </div>
 
-    <div style="margin-top: 20px;">
-        <h2>Acceder a confirmaciones (Solo para el organizador)</h2>
-        <input type="password" id="passwordInput" placeholder="Ingresa la contraseña">
-        <button type="button" onclick="verConfirmaciones()">Ver confirmaciones</button>
-        <p id="error" style="color: red;"></p>
-    </div>
+    <script type="module">
+        // Import the Firebase SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-analytics.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
 
-    <script>
-        const contraseña = 'cumpleañosmina70';
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "ATzaSyDjv1afvkqkpPb2duJr_0Iz79fhqh7U_8E",
+            authDomain: "confirmacion-d2ca5.firebaseapp.com",
+            databaseURL: "https://confirmacion-d2ca5-default-rtdb.firebaseio.com",
+            projectId: "confirmacion-d2ca5",
+            storageBucket: "confirmacion-d2ca5.appspot.com",
+            messagingSenderId: "640404413760",
+            appId: "1:640404413760:web:18ca57406366daeb106ea5",
+            measurementId: "G-YMHQGS5WXT"
+        };
 
-        window.onload = function() {
-            const confirmadosGuardados = JSON.parse(localStorage.getItem('confirmados')) || [];
-            mostrarConfirmados(confirmadosGuardados);
-        }
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const database = getDatabase(app);
 
-        function agregarInvitado() {
-            const extraInvitadosDiv = document.getElementById('extraInvitados');
-            const nuevoInvitado = document.createElement('div');
-            nuevoInvitado.innerHTML = `
-                <label for="nombre">Nombre del invitado adicional:</label>
-                <input type="text" name="nombre" placeholder="Escribe el nombre del invitado adicional">
-                <p class="error">Por favor, completa este campo.</p>
-            `;
-            extraInvitadosDiv.appendChild(nuevoInvitado);
-        }
+        // Form submission handler
+        const form = document.getElementById('confirm-form');
+        const errorMessage = document.getElementById('error-message');
 
-        document.getElementById('invitadosForm').addEventListener('submit', function(event) {
-            event.preventDefault();
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const nombre = document.getElementById('nombre').value;
+            const invitados = document.getElementById('invitados').value;
 
-            const nombres = document.querySelectorAll('input[name="nombre"]');
-            let todosCompletados = true;
-
-            // Validar que todos los campos de nombre estén llenos
-            nombres.forEach((nombreInput, index) => {
-                const errorMensaje = nombreInput.nextElementSibling;
-                if (!nombreInput.value.trim()) {
-                    errorMensaje.style.display = 'block';
-                    todosCompletados = false;
-                } else {
-                    errorMensaje.style.display = 'none';
-                }
-            });
-
-            if (todosCompletados) {
-                const confirmados = JSON.parse(localStorage.getItem('confirmados')) || [];
-
-                nombres.forEach(nombreInput => {
-                    const nombre = nombreInput.value;
-                    if (nombre) {
-                        confirmados.push(nombre);
-                    }
-                });
-
-                localStorage.setItem('confirmados', JSON.stringify(confirmados));
-
-                alert('Asistencia confirmada. Gracias por confirmar.');
-                resetearFormulario();
+            // Validar que ambos campos no estén vacíos
+            if (!nombre || !invitados) {
+                errorMessage.textContent = "Por favor, completa todos los campos.";
+                return;
             }
+
+            // Limpiar mensaje de error si se ingresaron los datos correctamente
+            errorMessage.textContent = '';
+
+            // Guardar en Firebase Database
+            const asistenciaRef = ref(database, 'asistencias');
+            const newAsistenciaRef = push(asistenciaRef);
+            set(newAsistenciaRef, {
+                nombre: nombre,
+                invitados: invitados
+            }).then(() => {
+                alert('¡Asistencia confirmada!');
+                form.reset();
+            }).catch((error) => {
+                console.error("Error al guardar en Firebase: ", error);
+                alert("Hubo un error al confirmar la asistencia. Inténtalo de nuevo.");
+            });
         });
-
-        function mostrarConfirmados(confirmados) {
-            const listaConfirmadosDiv = document.getElementById('listaConfirmados');
-            listaConfirmadosDiv.innerHTML = '';
-            confirmados.forEach(nombre => {
-                const confirmacionDiv = document.createElement('div');
-                confirmacionDiv.className = 'confirmado';
-                confirmacionDiv.textContent = nombre;
-                listaConfirmadosDiv.appendChild(confirmacionDiv);
-            });
-        }
-
-        function verConfirmaciones() {
-            const inputPassword = document.getElementById('passwordInput').value;
-            const errorP = document.getElementById('error');
-
-            if (inputPassword === contraseña) {
-                document.getElementById('confirmadosSection').style.display = 'block';
-                document.getElementById('limpiarBtn').style.display = 'inline';
-                errorP.textContent = '';
-            } else {
-                errorP.textContent = 'Contraseña incorrecta';
-            }
-        }
-
-        function limpiarConfirmaciones() {
-            localStorage.removeItem('confirmados');
-            mostrarConfirmados([]);
-            alert('Se han borrado todas las confirmaciones.');
-        }
-
-        function resetearFormulario() {
-            document.getElementById('invitadosForm').reset();
-            document.getElementById('extraInvitados').innerHTML = '';
-        }
     </script>
 </body>
 </html>
