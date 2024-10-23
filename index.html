@@ -7,129 +7,125 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background-color: white;
+            background-color: #f7f7f7;
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         h1 {
             text-align: center;
             color: #333;
         }
-        label {
-            display: block;
-            margin-top: 10px;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
+        input, button {
             margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            width: 100%;
             padding: 10px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
-        button:hover {
-            background-color: #218838;
+        .add-guest {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .submit-btn {
+            background-color: #008CBA;
+            color: white;
         }
         .error {
             color: red;
-            font-size: 14px;
         }
     </style>
 </head>
 <body>
+    <h1>Confirmación de Asistencia Cumpleaños Mina</h1>
     <div class="container">
-        <h1>Confirmar Asistencia Cumpleaños Mina </h1>
-        <form id="confirm-form">
-            <label for="nombre">Nombre</label>
-            <input type="text" id="nombre" placeholder="Ingresa tu nombre" required>
+        <form id="confirmationForm">
+            <label for="nombre">Tu nombre:</label>
+            <input type="text" id="nombre" name="nombre" placeholder="Ingresa tu nombre">
 
-            <label for="invitados">Número de Invitados</label>
-            <input type="number" id="invitados" placeholder="Número de invitados adicionales" required>
+            <div id="guests"></div>
 
-            <div class="error" id="error-message"></div>
+            <button type="button" class="add-guest" onclick="agregarInvitado()">Agregar otro invitado</button>
 
-            <button type="submit">Confirmar Asistencia</button>
+            <div id="error" class="error"></div>
+
+            <button type="submit" class="submit-btn">Confirmar Asistencia</button>
         </form>
+
+        <div id="confirmation"></div>
     </div>
 
-    <script type="module">
-        // Import the Firebase SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-analytics.js";
-        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
 
-        // Firebase configuration
+    <script>
+        // Configuración Firebase
         const firebaseConfig = {
-            apiKey: "ATzaSyDjv1afvkqkpPb2duJr_0Iz79fhqh7U_8E",
+            apiKey: "ATzaSyDjUfa1vkqkpPb2duJr_8Iz9fhqh7U_8E",
             authDomain: "confirmacion-d2ca5.firebaseapp.com",
             databaseURL: "https://confirmacion-d2ca5-default-rtdb.firebaseio.com",
             projectId: "confirmacion-d2ca5",
             storageBucket: "confirmacion-d2ca5.appspot.com",
             messagingSenderId: "640404413760",
-            appId: "1:640404413760:web:18ca57406366daeb106ea5",
-            measurementId: "G-YMHQGS5WXT"
+            appId: "1:640404413760:web:18ca5740636deab106ea5",
+            measurementId: "G-YHMQS65WXT"
         };
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const database = getDatabase(app);
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-        // Form submission handler
-        const form = document.getElementById('confirm-form');
-        const errorMessage = document.getElementById('error-message');
+        let invitadoCount = 0;
 
-        form.addEventListener('submit', (e) => {
+        function agregarInvitado() {
+            invitadoCount++;
+            const invitadosDiv = document.getElementById('guests');
+            const newInvitado = document.createElement('div');
+            newInvitado.innerHTML = `
+                <label for="invitado${invitadoCount}">Nombre del invitado ${invitadoCount}:</label>
+                <input type="text" id="invitado${invitadoCount}" name="invitado${invitadoCount}" placeholder="Ingresa el nombre del invitado ${invitadoCount}">
+            `;
+            invitadosDiv.appendChild(newInvitado);
+        }
+
+        document.getElementById('confirmationForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const nombre = document.getElementById('nombre').value;
-            const invitados = document.getElementById('invitados').value;
-
-            // Validar que ambos campos no estén vacíos
-            if (!nombre || !invitados) {
-                errorMessage.textContent = "Por favor, completa todos los campos.";
+            if (!nombre) {
+                document.getElementById('error').textContent = 'Por favor, completa tu nombre.';
                 return;
             }
 
-            // Limpiar mensaje de error si se ingresaron los datos correctamente
-            errorMessage.textContent = '';
+            // Capturar los nombres de los invitados adicionales
+            let invitadosAdicionales = [];
+            for (let i = 1; i <= invitadoCount; i++) {
+                const invitadoNombre = document.getElementById(`invitado${i}`).value;
+                if (invitadoNombre) {
+                    invitadosAdicionales.push(invitadoNombre);
+                }
+            }
 
-            // Guardar en Firebase Database
-            const asistenciaRef = ref(database, 'asistencias');
-            const newAsistenciaRef = push(asistenciaRef);
-            set(newAsistenciaRef, {
+            document.getElementById('error').textContent = '';
+
+            const confirmacionRef = database.ref('confirmaciones').push();
+            confirmacionRef.set({
                 nombre: nombre,
-                invitados: invitados
-            }).then(() => {
-                alert('¡Asistencia confirmada!');
-                form.reset();
-            }).catch((error) => {
-                console.error("Error al guardar en Firebase: ", error);
-                alert("Hubo un error al confirmar la asistencia. Inténtalo de nuevo.");
+                invitados: invitadosAdicionales
             });
+
+            document.getElementById('confirmation').innerHTML = '<p>Gracias por confirmar tu asistencia.</p>';
+            document.getElementById('confirmationForm').reset();
+            invitadoCount = 0;
+            document.getElementById('guests').innerHTML = ''; // Limpiar los invitados adicionales
         });
     </script>
 </body>
 </html>
-
 
 
 
