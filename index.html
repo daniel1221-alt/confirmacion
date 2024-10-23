@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Asistencia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            width: 100%;
+            margin-top: 5px;
+        }
+        input[type="password"] {
+            padding: 8px;
+            width: 100%;
+            margin-top: 5px;
+        }
+        button {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .confirmados {
+            margin-top: 20px;
+            display: none;
+        }
+        .confirmado {
+            background-color: #e7f3e7;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+        }
+        #limpiarBtn {
+            display: none;
+        }
+        /* Estilo de error */
+        .error {
+            color: red;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Confirmación de Asistencia</h1>
+    <form id="invitadosForm">
+        <label for="nombre">Nombre del invitado:</label>
+        <input type="text" id="nombre" name="nombre" placeholder="Escribe tu nombre">
+        <p class="error" id="nombreError">Por favor, completa este campo.</p>
+
+        <div id="extraInvitados"></div>
+
+        <button type="button" onclick="agregarInvitado()">Agregar 1 invitado más</button>
+        <button type="submit">Confirmar Asistencia</button>
+        <button type="button" onclick="resetearFormulario()">Resetear formulario</button>
+    </form>
+
+    <div class="confirmados" id="confirmadosSection">
+        <h2>Lista de personas que han confirmado asistencia:</h2>
+        <div id="listaConfirmados"></div>
+        <button type="button" id="limpiarBtn" onclick="limpiarConfirmaciones()">Limpiar confirmaciones</button>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <h2>Acceder a confirmaciones (Solo para el organizador)</h2>
+        <input type="password" id="passwordInput" placeholder="Ingresa la contraseña">
+        <button type="button" onclick="verConfirmaciones()">Ver confirmaciones</button>
+        <p id="error" style="color: red;"></p>
+    </div>
+
+    <script>
+        const contraseña = 'tu-contraseña-secreta';
+
+        window.onload = function() {
+            const confirmadosGuardados = JSON.parse(localStorage.getItem('confirmados')) || [];
+            mostrarConfirmados(confirmadosGuardados);
+        }
+
+        function agregarInvitado() {
+            const extraInvitadosDiv = document.getElementById('extraInvitados');
+            const nuevoInvitado = document.createElement('div');
+            nuevoInvitado.innerHTML = `
+                <label for="nombre">Nombre del invitado adicional:</label>
+                <input type="text" name="nombre" placeholder="Escribe el nombre del invitado adicional">
+                <p class="error">Por favor, completa este campo.</p>
+            `;
+            extraInvitadosDiv.appendChild(nuevoInvitado);
+        }
+
+        document.getElementById('invitadosForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const nombres = document.querySelectorAll('input[name="nombre"]');
+            let todosCompletados = true;
+
+            // Validar que todos los campos de nombre estén llenos
+            nombres.forEach((nombreInput, index) => {
+                const errorMensaje = nombreInput.nextElementSibling;
+                if (!nombreInput.value.trim()) {
+                    errorMensaje.style.display = 'block';
+                    todosCompletados = false;
+                } else {
+                    errorMensaje.style.display = 'none';
+                }
+            });
+
+            if (todosCompletados) {
+                const confirmados = JSON.parse(localStorage.getItem('confirmados')) || [];
+
+                nombres.forEach(nombreInput => {
+                    const nombre = nombreInput.value;
+                    if (nombre) {
+                        confirmados.push(nombre);
+                    }
+                });
+
+                localStorage.setItem('confirmados', JSON.stringify(confirmados));
+
+                alert('Asistencia confirmada. Gracias por confirmar.');
+                resetearFormulario();
+            }
+        });
+
+        function mostrarConfirmados(confirmados) {
+            const listaConfirmadosDiv = document.getElementById('listaConfirmados');
+            listaConfirmadosDiv.innerHTML = '';
+            confirmados.forEach(nombre => {
+                const confirmacionDiv = document.createElement('div');
+                confirmacionDiv.className = 'confirmado';
+                confirmacionDiv.textContent = nombre;
+                listaConfirmadosDiv.appendChild(confirmacionDiv);
+            });
+        }
+
+        function verConfirmaciones() {
+            const inputPassword = document.getElementById('passwordInput').value;
+            const errorP = document.getElementById('error');
+
+            if (inputPassword === contraseña) {
+                document.getElementById('confirmadosSection').style.display = 'block';
+                document.getElementById('limpiarBtn').style.display = 'inline';
+                errorP.textContent = '';
+            } else {
+                errorP.textContent = 'Contraseña incorrecta';
+            }
+        }
+
+        function limpiarConfirmaciones() {
+            localStorage.removeItem('confirmados');
+            mostrarConfirmados([]);
+            alert('Se han borrado todas las confirmaciones.');
+        }
+
+        function resetearFormulario() {
+            document.getElementById('invitadosForm').reset();
+            document.getElementById('extraInvitados').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
+
+
